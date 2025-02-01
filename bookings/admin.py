@@ -7,3 +7,4 @@ from django.contrib.admin.decorators import register
 @admin.register(Booking)
 class BookingAdmin(ModelAdmin):
     list_display = ('id', 'user', 'room', 'status', 'check_in')
+    list_filter = ('created_at',)

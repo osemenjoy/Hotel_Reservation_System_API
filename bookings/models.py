@@ -6,17 +6,19 @@ from rooms.models import Room
 class Booking(models.Model):
     STATUS_CHOICES = [
         ("PENDING", "Pending"),
-        ("CONFIRMED", "Confirmed"),
+        ("PAID", "Paid"),
         ("CHECKED_IN", "Checked_in"),
-        ("CHECKED_OUT", "Checked_out"),
+        ("COMPLETE", "Complete"),
         ("CANCELLED", "Cancelled")
     ]
     id = models.UUIDField(primary_key= True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    number_of_rooms = models.PositiveIntegerField(default=1)
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="Pending")
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="PENDING")
     check_in = models.DateTimeField()
     check_out = models.DateTimeField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
 
 

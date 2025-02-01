@@ -17,3 +17,6 @@ class Room(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     quantity_available= models.PositiveIntegerField()
 
+    def __str__(self):
+        return self.name
+

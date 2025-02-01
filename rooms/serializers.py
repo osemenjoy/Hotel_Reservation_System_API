@@ -3,10 +3,6 @@ from rest_framework import serializers
 
 
 class RoomSerializer(serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(
-        queryset=Category.objects.all(),
-        slug_field="name"
-    )
     class Meta:
         model = Room
         fields = "__all__"
