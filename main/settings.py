@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     # external apps
     'rest_framework',
     'rest_framework_simplejwt',
+    'drf_spectacular',
 
     # local apps
     'users',
@@ -145,8 +146,17 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
 }
+
+SPECTACULAR_SETTINGS = { 
+    'TITLE': 'HOTEL RESERVATION SYSTEM API', 
+    'DESCRIPTION': 'API documentation for a hotel management system', 
+    'VERSION': '1.0.0', 
+    }
 
 SIMPLE_JWT = { 
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), 

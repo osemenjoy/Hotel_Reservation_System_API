@@ -1,3 +1,7 @@
+import requests
+import uuid
+from django.conf import settings
+from rest_framework.response import Response
 
 def initiate_payment(amount, email, name, phonenumber, redirect_url):
     url = "https://api.flutterwave.com/v3/payments"
@@ -33,3 +37,25 @@ def initiate_payment(amount, email, name, phonenumber, redirect_url):
     except requests.exceptions.RequestException as err:
         print("the payment didn't go through")
         return Response({"error": str(err)}, status=500)
+
+
+def verify_transaction(transaction_id):
+    url = f"https://api.flutterwave.com/v3/transactions/{transaction_id}/verify"
+    headers = {
+        "Authorization": f"Bearer {settings.FLW_SEC_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    response = requests.get(url, headers=headers)
+    data = response.json()
+
+    if data.get("status") == "success":
+        return {
+            "status": data["data"]["status"],
+            "payment_method": data["data"]["payment_type"],  
+            "amount": data["data"]["amount"],
+            "customer_email": data["data"]["customer"]["email"],
+        }
+    
+    return None
+

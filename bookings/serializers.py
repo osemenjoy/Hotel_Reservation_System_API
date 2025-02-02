@@ -18,7 +18,7 @@ class BookingSerializer(serializers.ModelSerializer):
         number_of_rooms = validated_data.get("number_of_rooms")
         if request and hasattr(request, "user"):
             validated_data["user"] = request.user
-        if room.quantity_available:
+        if room.quantity_available > 0:
             room.quantity_available -= 1
             room.save()
             validated_data["amount"] = room.price * number_of_rooms

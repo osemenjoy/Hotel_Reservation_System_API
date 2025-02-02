@@ -3,13 +3,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
 from .serializers import BookingSerializer
-from rest_framework.decorators import action
-from django.conf import settings
-import requests
-import uuid 
-from .models import Booking
+from .models import Booking, Transactions
 from rest_framework.views import APIView
-from .utils import initiate_payment
+from .utils import initiate_payment, verify_transaction
 
 class CreateBookingView(GenericAPIView):
     serializer_class = BookingSerializer
@@ -76,9 +72,43 @@ class ConfirmPaymentView(GenericAPIView):
 
     def post(self, request, booking_id,  *args, **kwargs):
         try:
+            transaction_id = request.GET.get("transaction_id")
+            if not transaction_id:
+                return Response({
+                        "message": "Transaction ID is required",
+                        "status": status.HTTP_400_BAD_REQUEST
+                    }, status = status.HTTP_400_BAD_REQUEST
+                )
+            
+            payment_data = verify_transaction(transaction_id)
             booking = Booking.objects.get(id=booking_id)
-            booking.status = 'PAID'
-            booking.save()
+
+            if payment_data["status"] == "successful":
+                booking.status = 'PAID'
+                booking.save()
+                transaction = Transactions.objects.create(
+                    user = booking.user,
+                    booking=booking,
+                    amount=booking.amount,
+                    payment_method = payment_data["payment_method"],
+                    status = "SUCCESSFUL"
+                )
+            else:
+                transaction = Transactions.objects.create(
+                    user = booking.user,
+                    booking=booking,
+                    amount=booking.amount,
+                    payment_method = payment_data["payment_method"],
+                    status = "FAILED"                    
+                )
+                print(payment_data["status"])
+
+                return Response(
+                    {
+                        "message": f"Transaction Failed: {payment_data.get('message', 'No additional information')}",
+                        "status": status.HTTP_400_BAD_REQUEST
+                    }, status= status.HTTP_400_BAD_REQUEST
+                )
             serializer = self.get_serializer(booking)
             return Response(
                 {
@@ -172,6 +202,14 @@ class BookingCancelView(APIView):
     def post(self, request, booking_id):
         try:
             booking = Booking.objects.get(id=booking_id)
+            user = request.user
+            if user != booking.user:
+                return Response (
+                    {
+                        "message": "You do not have permission to do this",
+                        "status": status.HTTP_403_FORBIDDEN
+                    }, status= status.HTTP_403_FORBIDDEN
+                )
             if booking.status != "PENDING":
                 return Response(
                     {
@@ -216,10 +254,18 @@ class BookingUpdateView(GenericAPIView):
     def put(self, request, booking_id):
         try:
             booking = Booking.objects.get(id= booking_id)
+            user = request.user
+            if user != booking.user:
+                return Response (
+                    {
+                        "message": "You do not have permission to do this",
+                        "status": status.HTTP_403_FORBIDDEN
+                    }, status= status.HTTP_403_FORBIDDEN
+                )            
             if booking.status != "PENDING":
                 return Response(
                     {
-                        "message": "You cannot cancel the booking",
+                        "message": "You cannot update the booking",
                         "data": f"Your booking status is {booking.status}",
                         "status": status.HTTP_403_FORBIDDEN
                     }, status=  status.HTTP_403_FORBIDDEN
