@@ -79,7 +79,7 @@ class UserListView(GenericAPIView):
         queryset = super().get_queryset()
         user = self.request.user
         if user.is_authenticated:
-            if hasattr(user, "admin") or user.is_superuser:
+            if user.is_superuser or user.roles == 'ADMIN':
                 return queryset
             return queryset.filter(id=user.id)
         else:

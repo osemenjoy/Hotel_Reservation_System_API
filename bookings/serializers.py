@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Booking
+from .models import Booking, Transactions
 from rooms.models import Category, Room
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -31,3 +31,8 @@ class BookingCancelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ("id", "")
+
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transactions
+        fields = "__all__"

@@ -2,7 +2,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
-from .serializers import BookingSerializer
+from .serializers import BookingSerializer, TransactionSerializer
 from .models import Booking, Transactions
 from rest_framework.views import APIView
 from .utils import initiate_payment, verify_transaction
@@ -191,7 +191,7 @@ class BookingListView(GenericAPIView):
     def  get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        if hasattr(user, "admin") or user.is_superuser:
+        if user.is_superuser or user.roles == 'ADMIN':
             return queryset
         return queryset.filter(user=user)  
     
@@ -292,5 +292,82 @@ class BookingUpdateView(GenericAPIView):
                 {
                     "message": str(e),
                     "status": status.HTTP_400_BAD_REQUEST,
+                }, status= status.HTTP_400_BAD_REQUEST
+            )
+        
+class TransactionListView(GenericAPIView):
+    queryset = Transactions.objects.all()
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            transaction = self.get_queryset()
+            serializer = self.get_serializer(transaction, many=True)
+            return Response({
+                "message": "Transaction list retrieved",
+                "status": status.HTTP_200_OK,
+                "data":serializer.data
+            }, status= status.HTTP_200_OK
+        )
+        except Transactions.DoesNotExist:
+            return Response(
+                {
+                    "message": "Transaction not found",
+                    "status": status.HTTP_404_NOT_FOUND
+                }, status= status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "message": str(e),
+                    "status": status.HTTP_400_BAD_REQUEST
+                }, status= status.HTTP_400_BAD_REQUEST
+            )
+        
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_superuser or user.roles == 'ADMIN':
+            return queryset
+        return queryset.filter(user=user)
+    
+class TransactionDetailView(GenericAPIView):
+    queryset = Transactions.objects.all()
+    serializer_class = TransactionSerializer
+    permission_classes = [IsAuthenticated]
+
+
+    def get(self, request, transaction_id):
+        try:
+            transaction = Transactions.objects.get(id=transaction_id)
+            user = request.user
+            serializer = self.get_serializer(transaction)
+            if user != transaction.user:
+                return Response(
+                    {
+                        "message": "You do not have permission to do this",
+                        "status": status.HTTP_403_FORBIDDEN
+                    }, status=  status.HTTP_403_FORBIDDEN
+                )
+            return Response(
+                {
+                    "message": "Transaction details retrieved",
+                    "status": status.HTTP_200_OK,
+                    "data": serializer.data
+                }, status= status.HTTP_200_OK
+            )
+        except Transactions.DoesNotExist:
+            return Response(
+                {
+                    "message": "Transaction not found",
+                    "status": status.HTTP_404_NOT_FOUND
+                }, status= status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {
+                    "message": str(e),
+                    "status": status.HTTP_400_BAD_REQUEST
                 }, status= status.HTTP_400_BAD_REQUEST
             )
